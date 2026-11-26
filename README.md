@@ -1,9 +1,7 @@
-# Simulasi Trainer PLC
+# Lab Virtual
 
-Simulasi web trainer PLC Omron CP2E untuk praktikum: pengenalan trainer, editor ladder ala CX-Programmer, wiring, transfer, dan 15 latihan dengan uji otomatis.
+Pintu masuk Lab Virtual: login, pendaftaran, dan kartu simulator trainer.
+Mesin simulator dan materinya tersimpan di Google Drive dan dimuat lewat server Apps Script setelah login,
+jadi repository ini tidak berisi materi maupun kunci jawaban.
 
-Repo ini hanya berisi halaman depan (login/registrasi). Mesin simulator dan materi diambil dari Google Drive lewat Google Apps Script setelah pengguna login.
-
-- `index.html`, `style.css`, `loader.js`: halaman login, pemuat, dan pencatat aktivitas
-- `config.js`: isi `API_URL` dengan URL Web App Apps Script
-- `foto-trainer.jpg`: foto trainer untuk Bagian 1
+Sebelum dipakai, isi `API_URL` di `config.js` dengan alamat Web App Apps Script.

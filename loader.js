@@ -1,10 +1,11 @@
-/* Simulasi Trainer PLC — pintu depan (login, register, pemuat aplikasi, pencatatan) */
+/* Lab Virtual — pintu depan (login, register, beranda simulator, pemuat aplikasi, pencatatan) */
 (function () {
   'use strict';
-  const CFG = window.PLC_CONFIG || {};
+  const CFG = window.LV_CONFIG || window.PLC_CONFIG || {};
   const $ = q => document.querySelector(q);
-  const SESS = 'plc_session';
-  let session = null;
+  const SESS = 'lv_session';
+  let session = null, home = null, simId = null;
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /* ---------- komunikasi dengan Apps Script ---------- */
   async function call(action, data, tries) {
@@ -29,11 +30,9 @@
     throw new Error('Server sedang sibuk atau koneksi terputus. Coba lagi sebentar. (' + (last && last.message) + ')');
   }
 
-  /* ---------- tampilan gerbang ---------- */
-  function show(which) {
-    $('#gate').hidden = which !== 'gate'; $('#loading').hidden = which !== 'loading';
-    $('#app').hidden = which !== 'app'; $('#admin').hidden = which !== 'admin';
-  }
+  /* ---------- tampilan ---------- */
+  const VIEWS = ['gate', 'loading', 'home', 'app', 'admin'];
+  function show(w) { VIEWS.forEach(v => { $('#' + v).hidden = v !== w; }); $('#lvbar').hidden = w !== 'app'; }
   function setTab(t) {
     document.querySelectorAll('[data-gtab]').forEach(b => b.classList.toggle('on', b.dataset.gtab === t));
     $('#fLogin').hidden = t !== 'login'; $('#fReg').hidden = t !== 'reg'; $('#gMsg').textContent = '';
@@ -41,11 +40,12 @@
   function gmsg(m, ok) { const e = $('#gMsg'); e.textContent = m; e.className = 'gmsg ' + (ok ? 'ok' : 'bad'); }
   function loadingMsg(m) { $('#loadMsg').textContent = m; }
   function busy(form, on) { form.querySelectorAll('button,input').forEach(x => x.disabled = on); }
+  const isMhs = () => session && session.user.role === 'mahasiswa';
 
-  /* ---------- penyimpanan progres per akun ---------- */
+  /* ---------- penyimpanan progres per akun & per simulator ---------- */
   const store = { data: {}, timer: null, dirty: false, key: '' };
-  function storeInit(nim, serverState) {
-    store.key = 'plc_state_' + nim;
+  function storeInit(serverState) {
+    store.key = 'lv_state_' + session.user.id + '_' + simId + (isMhs() ? '' : '_pratinjau');
     let local = null;
     try { local = JSON.parse(localStorage.getItem(store.key) || 'null'); } catch (e) {}
     store.data = (serverState && typeof serverState === 'object') ? serverState : (local || {});
@@ -53,16 +53,23 @@
   const STORE = {
     get: k => (k in store.data ? store.data[k] : null),
     set: (k, v) => {
-      store.data[k] = String(v);
-      if (!session || session.user.role !== 'mahasiswa') return;
+      v = String(v); if (store.data[k] === v) return;
+      store.data[k] = v;
       try { localStorage.setItem(store.key, JSON.stringify(store.data)); } catch (e) {}
+      if (!isMhs()) return;
       store.dirty = true; clearTimeout(store.timer); store.timer = setTimeout(pushState, 4000);
     }
   };
+  function summary() {
+    let s = {};
+    try { s = (API.getSummary && API.getSummary()) || {}; } catch (e) {}
+    if (s.progres === undefined && s.b1 !== undefined) s = { progres: `Bagian 1 ${s.b1} · Bagian 2 ${s.b2} · Bagian 3 ${s.b3} · Latihan ${s.latN}`, detail: s.lat || '' };
+    return s;
+  }
   async function pushState() {
-    if (!store.dirty || !session || session.user.role !== 'mahasiswa') return;
+    if (!store.dirty || !isMhs() || !simId) return;
     store.dirty = false;
-    try { await call('saveState', { state: store.data, summary: API.getSummary ? API.getSummary() : {} }, 2); }
+    try { await call('saveState', { sim: simId, state: store.data, summary: summary() }, 2); }
     catch (e) { store.dirty = true; }
   }
 
@@ -70,74 +77,103 @@
   const queue = [];
   let logTimer = null;
   function log(type, d) {
-    if (!session || session.user.role !== 'mahasiswa') return;
+    if (!isMhs() || !simId) return;
     queue.push(Object.assign({ type, t: new Date().toISOString() }, d));
     if (queue.length >= 25) flushLog(); else { clearTimeout(logTimer); logTimer = setTimeout(flushLog, 8000); }
   }
   async function flushLog() {
     clearTimeout(logTimer);
-    if (!queue.length || !session) return;
+    if (!queue.length || !session || !simId) return;
     const batch = queue.splice(0, queue.length);
-    try { await call('log', { events: batch }, 2); } catch (e) { queue.unshift(...batch); }
+    try { await call('log', { sim: simId, events: batch }, 2); } catch (e) { queue.unshift(...batch); }
   }
   function beacon() {
-    if (!session || session.user.role !== 'mahasiswa') return;
-    const send = (action, data) => { try { navigator.sendBeacon(CFG.API_URL, new Blob([JSON.stringify(Object.assign({ action, token: session.token }, data))], { type: 'text/plain' })); } catch (e) {} };
+    if (!isMhs() || !simId) return;
+    const send = (action, data) => { try { navigator.sendBeacon(CFG.API_URL, new Blob([JSON.stringify(Object.assign({ action, token: session.token, sim: simId }, data))], { type: 'text/plain' })); } catch (e) {} };
     if (queue.length) send('log', { events: queue.splice(0, queue.length) });
-    if (store.dirty) { store.dirty = false; send('saveState', { state: store.data, summary: API.getSummary ? API.getSummary() : {} }); }
+    if (store.dirty) { store.dirty = false; send('saveState', { state: store.data, summary: summary() }); }
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') beacon(); });
   window.addEventListener('pagehide', beacon);
 
   /* ---------- memuat bundle dari Drive (dengan cache per versi) ---------- */
-  async function getVersions() { return call('version'); }
-  async function getBundle(part, v) {
-    const key = 'plc_bundle_' + part;
+  async function getBundle(sim, part, v) {
+    const key = 'lv_bundle_' + (sim || '') + '_' + part;
     try { const c = JSON.parse(localStorage.getItem(key) || 'null'); if (c && c.v === v) return c.d; } catch (e) {}
-    const r = await call('bundle', { part });
+    const r = await call('bundle', { sim, part });
     const d = part === 'materi' ? r.materi : r.text;
     try { localStorage.setItem(key, JSON.stringify({ v, d })); } catch (e) {}
     return d;
   }
   function run(code) { (0, Function)(code)(); }
 
-  /* ---------- API untuk aplikasi & dashboard ---------- */
-  const API = window.__PLC = {
+  /* ---------- API untuk aplikasi simulator & dashboard ---------- */
+  const API = window.__LV = window.__PLC = {
     call, log, store: STORE,
     get user() { return session && session.user; },
-    materi: null,
-    logout: async () => { await flushLog(); await pushState(); try { localStorage.removeItem(SESS); } catch (e) {} location.reload(); },
-    toDashboard: () => { if (session && session.user.role !== 'mahasiswa') show('admin'); },
-    openApp: async () => { await startApp(); },
+    get sim() { return simId; },
+    materi: null, getSummary: null,
+    logout: async () => { await flushLog(); await pushState(); try { localStorage.removeItem(SESS); } catch (e) {} location.hash = ''; location.reload(); },
+    toHome: async () => { await flushLog(); await pushState(); location.hash = ''; location.reload(); },
+    toDashboard: async () => { if (session && !isMhs()) { await flushLog(); await pushState(); location.hash = 'dashboard'; location.reload(); } },
+    openApp: () => API.toHome(),
+    openSim: id => { location.hash = 'sim=' + encodeURIComponent(id); location.reload(); },
     flush: async () => { await flushLog(); await pushState(); }
   };
 
-  let versions = null, appStarted = false;
-  async function startApp() {
-    if (appStarted) { show('app'); return; }
-    show('loading'); loadingMsg('Memuat materi…');
-    API.materi = await getBundle('materi', versions.materi);
-    if (session.user.role === 'mahasiswa') {
-      loadingMsg('Memuat progres…');
-      let st = null; try { st = (await call('loadState')).state; } catch (e) {}
-      storeInit(session.user.id, st);
-    } else storeInit('pratinjau_' + session.user.id, null);
+  /* ---------- beranda: kartu simulator ---------- */
+  function drawHome() {
+    const u = session.user, sims = home.sims;
+    const staff = u.role !== 'mahasiswa';
+    $('#home').innerHTML = `<div class="lv">
+      <header class="lv-top"><div><p class="kick">Lab Virtual</p><h1>Pilih simulator</h1></div>
+        <span class="who">${esc(u.nama)} · ${u.role === 'mahasiswa' ? esc(u.id) + ' · ' + esc(u.kelas) : esc(u.role)}</span>
+        ${staff ? '<button type="button" id="hDash" class="pri">Dashboard</button>' : ''}<button type="button" id="hOut">Keluar</button></header>
+      <div class="lv-grid">${sims.map(s => `<button type="button" class="lv-card${s.open ? '' : ' off'}" data-sim="${esc(s.id)}" ${s.open ? '' : 'aria-disabled="true"'}>
+        <span class="lv-img">${s.gambar ? `<img src="${esc(s.gambar)}" alt="" loading="lazy">` : (s.open ? `<span class="lv-ph">${esc(s.nama.slice(0, 1))}</span>` : '<span class="lv-ph"></span>')}${s.open ? '' : `<span class="lv-lock"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3" fill="none" stroke="#fff" stroke-width="2"/><rect x="5" y="11" width="14" height="10" rx="2" fill="#fff"/></svg></span>`}</span>
+        <span class="lv-body"><b>${esc(s.nama)}</b><span>${esc(s.ket)}</span><em>${s.open ? 'Masuk' : s.segera ? 'Segera hadir' : (staff ? 'Bukan simulator Anda' : 'Ditutup oleh dosen')}</em></span></button>`).join('')}</div>
+      <p class="gnote" id="hMsg" role="status"></p></div>`;
+    $('#hOut').addEventListener('click', () => API.logout());
+    $('#hDash') && $('#hDash').addEventListener('click', () => API.toDashboard());
+    document.querySelectorAll('[data-sim]').forEach(b => b.addEventListener('click', () => {
+      const s = sims.find(x => x.id === b.dataset.sim);
+      if (!s.open) { $('#hMsg').textContent = s.segera ? `Simulator ${s.nama} sedang disiapkan.` : `Simulator ${s.nama} belum dibuka untuk kelas Anda.`; return; }
+      API.openSim(s.id);
+    }));
+    show('home');
+  }
+
+  async function startSim(id) {
+    const s = home.sims.find(x => x.id === id);
+    if (!s || !s.open) { location.hash = ''; drawHome(); $('#hMsg').textContent = 'Simulator itu tidak bisa dibuka.'; return; }
+    simId = s.id;
+    $('#lvbar').innerHTML = `<button type="button" id="lvHome">← Lab Virtual</button><b>${esc(s.nama)}</b><span class="who">${esc(session.user.nama)}${isMhs() ? '' : ' · pratinjau ' + esc(session.user.role)}</span>`;
+    $('#lvHome').addEventListener('click', () => API.toHome());
+    show('loading'); loadingMsg('Memuat materi ' + s.nama + '…');
+    API.materi = await getBundle(s.id, 'materi', s.v);
+    let st = null;
+    if (isMhs()) { loadingMsg('Memuat progres…'); try { st = (await call('loadState', { sim: s.id })).state; } catch (e) {} }
+    storeInit(st);
     loadingMsg('Memuat simulator…');
-    const code = await getBundle('app', versions.app);
-    show('app'); run(code); appStarted = true;
+    const code = await getBundle(s.id, 'app', s.v);
+    show('app'); run(code);
   }
   async function startAdmin() {
     show('loading'); loadingMsg('Memuat dashboard…');
-    const code = await getBundle('admin', versions.admin);
+    const code = await getBundle('', 'admin', home.adminV);
     show('admin'); run(code);
   }
   async function enter() {
-    show('loading'); loadingMsg('Memeriksa versi…');
+    show('loading'); loadingMsg('Memuat daftar simulator…');
     try {
-      versions = await getVersions();
-      if (session.user.role === 'mahasiswa') await startApp(); else await startAdmin();
+      home = await call('home');
+      session.user = home.user; localStorage.setItem(SESS, JSON.stringify(session));
+      const h = decodeURIComponent(location.hash.slice(1));
+      if (h.startsWith('sim=')) await startSim(h.slice(4));
+      else if (h === 'dashboard' && !isMhs()) await startAdmin();
+      else drawHome();
     } catch (e) {
-      show('gate'); setTab('login'); gmsg(e.message);
+      if (session) { show('gate'); setTab('login'); gmsg(e.message); }
     }
   }
   function sessionExpired() { try { localStorage.removeItem(SESS); } catch (e) {} session = null; show('gate'); setTab('login'); gmsg('Sesi berakhir. Silakan masuk lagi.'); }
@@ -150,7 +186,7 @@
       e.preventDefault(); const f = e.target; busy(f, true); gmsg('Memeriksa…', true);
       try {
         const r = await call('login', { id: $('#lId').value.trim(), password: $('#lPw').value });
-        session = { token: r.token, user: r.user }; localStorage.setItem(SESS, JSON.stringify(session)); await enter();
+        session = { token: r.token, user: r.user }; localStorage.setItem(SESS, JSON.stringify(session)); location.hash = ''; await enter();
       } catch (er) { gmsg(er.message); } finally { busy(f, false); }
     });
     $('#fReg').addEventListener('submit', async e => {
@@ -159,7 +195,7 @@
       busy(f, true); gmsg('Mendaftarkan…', true);
       try {
         const r = await call('register', { nama: $('#rNama').value.trim(), nim: $('#rNim').value.trim(), kelas: $('#rKelas').value.trim(), password: $('#rPw').value });
-        session = { token: r.token, user: r.user }; localStorage.setItem(SESS, JSON.stringify(session)); await enter();
+        session = { token: r.token, user: r.user }; localStorage.setItem(SESS, JSON.stringify(session)); location.hash = ''; await enter();
       } catch (er) { gmsg(er.message); } finally { busy(f, false); }
     });
     try { session = JSON.parse(localStorage.getItem(SESS) || 'null'); } catch (e) { session = null; }

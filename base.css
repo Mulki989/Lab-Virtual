@@ -1,0 +1,64 @@
+/* Lab Virtual — gaya dasar: login, beranda, dashboard */
+:root{color-scheme:light dark;--bg:light-dark(#e7eaee,#101317);--ink:light-dark(#14181d,#e7eaee);--card:light-dark(#ffffff,#1a1f25);--line:light-dark(#d3d8de,#2c333b);--muted:light-dark(#56606b,#9aa4ae);--acc:light-dark(#0057b0,#5aa2ff);--ok:light-dark(#17803f,#4fd184);--okbg:light-dark(#e6f6ec,#13301f);--bad:light-dark(#b42318,#ff8a80);--badbg:light-dark(#fdeceb,#3a1715)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip}
+h1,h2{font-family:"Barlow Semi Condensed",Barlow,sans-serif;line-height:1.1;text-wrap:balance;margin:0}
+button{font:inherit;cursor:pointer;border-radius:10px;min-height:44px;padding:8px 16px;border:1.5px solid var(--line);background:var(--card);color:var(--ink)}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button:disabled{opacity:.45;cursor:default}
+/* ===== gerbang login, dashboard ===== */
+[hidden]{display:none!important}
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--bg)}
+.gcard{width:min(420px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;display:grid;gap:14px;box-shadow:0 10px 40px #0001}
+.gcard h1{font-size:32px}.gcard .kick{margin:0;color:var(--muted);font-size:14px}
+.gtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}.gtabs button.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.gcard form{display:grid;gap:12px}.gcard label{display:grid;gap:4px;font-size:15px}
+.gcard input,.adm input,.adm select{font:16px Barlow,system-ui,sans-serif;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}
+.gmsg{margin:0;min-height:22px;font-size:15px}.gmsg.bad{color:var(--bad)}.gmsg.ok{color:var(--muted)}
+.gnote{margin:0;font-size:14px;color:var(--muted)}
+.spin{width:42px;height:42px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--acc);animation:sp 1s linear infinite;justify-self:center}
+@keyframes sp{to{transform:rotate(360deg)}}
+.who{align-self:center;font-size:14px;color:var(--muted);margin-right:6px}
+.adm{padding:16px max(2vw,14px);display:grid;gap:16px}
+.adm-top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.adm-top h1{font-size:28px;margin-right:auto}
+.adm-tabs{display:flex;flex-wrap:wrap;gap:6px}.adm-tabs button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.adm-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;gap:12px}
+.adm-card h2{font-size:22px}
+.adm-row{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.adm-row label{display:grid;gap:4px;font-size:14px}
+.tbl{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px}
+.tbl table{border-collapse:collapse;width:100%;font-size:14px}
+.tbl th{position:sticky;top:0;background:var(--bg);text-align:left;z-index:1}
+.tbl th,.tbl td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap}
+.tbl td.wrap{white-space:pre-wrap;min-width:260px;max-width:520px}
+.tbl tr.click{cursor:pointer}.tbl tr.click:hover td{background:var(--okbg)}
+.pill{display:inline-block;padding:1px 8px;border-radius:20px;font-size:13px;font-weight:600}
+.pill.ok{background:var(--okbg);color:var(--ok)}.pill.bad{background:var(--badbg);color:var(--bad)}
+.amsg{min-height:20px;margin:0;font-size:15px}.amsg.bad{color:var(--bad)}.amsg.ok{color:var(--ok)}
+.stat{display:flex;flex-wrap:wrap;gap:10px}.stat div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:14px}.stat b{display:block;font-size:22px}
+
+/* ===== beranda Lab Virtual ===== */
+.lv{max-width:1180px;margin:0 auto;padding:20px max(2vw,14px);display:grid;gap:18px}
+.lv-top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.lv-top>div{margin-right:auto}.lv-top .kick{margin:0;color:var(--muted);font-size:14px}.lv-top h1{font-size:30px}
+.lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.lv-card{display:grid;grid-template-rows:auto 1fr;padding:0;text-align:left;border-radius:16px;overflow:hidden;border:2px solid var(--acc);background:var(--card);min-height:0;transition:transform .15s,box-shadow .15s}
+.lv-card:not(.off):hover{transform:translateY(-3px);box-shadow:0 10px 28px #0057b033}
+.lv-img{position:relative;display:block;aspect-ratio:16/10;background:#5b4a3d;overflow:hidden}
+.lv-img img{width:100%;height:100%;object-fit:cover;display:block}
+.lv-ph{display:grid;place-items:center;height:100%;font:700 64px "Barlow Semi Condensed",sans-serif;color:#fff;background:#2b6cb0}
+.lv-body{display:grid;gap:4px;padding:12px 14px 14px}.lv-body b{font-size:19px}.lv-body span{font-size:14px;color:var(--muted)}
+.lv-body em{font-style:normal;font-weight:700;color:var(--acc);margin-top:4px}
+.lv-card.off{border:2px dashed var(--line);cursor:not-allowed;background:var(--bg)}
+.lv-card.off .lv-img{filter:grayscale(1) brightness(.5)}
+.lv-card.off .lv-body{opacity:.55}.lv-card.off .lv-body em{color:var(--muted)}
+.lv-lock{position:absolute;inset:0;display:grid;place-items:center}
+.lvbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px max(2vw,14px);background:#14181d;color:#fff}
+.lvbar button{min-height:38px;padding:4px 12px;background:#fff;color:#14181d;border-color:#fff;font-weight:600}
+.lvbar .who{color:#c7ced6;margin-left:auto}
+.acc-grid td{white-space:normal!important;min-width:170px}
+.acc-cell{display:grid;gap:6px}.acc-cell input{min-height:36px!important;padding:6px 8px!important;font-size:14px!important}
+.tg{min-height:36px;padding:4px 10px;font-weight:700}.tg.on{background:var(--okbg);border-color:var(--ok);color:var(--ok)}.tg.off{color:var(--muted)}

@@ -1,4 +1,4 @@
-/* Isi API_URL dengan alamat Web App Apps Script (berakhiran /exec). Lihat PANDUAN-SETUP.md langkah 5. */
-window.PLC_CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbz19BAOnGpXSxaEWdAHvlIlm57q4FkX6jxs17gvOaPp9hYV0Zmidoe5NJ3MlMqr-5HC/exec'
+/* Isi API_URL dengan alamat Web App Apps Script (berakhiran /exec). Lihat PANDUAN-SETUP.md. */
+window.LV_CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbzUGDAc_36itGLP3RdVl-QZnvTDTdSVtC5EuzK5mDf_dXiocc5rGoUJHtEZWR3ZX7sM/exec'
 };

@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Simulasi Trainer PLC</title>
+<title>Lab Virtual</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="base.css">
 </head>
 <body>
 <section id="gate" class="gate" hidden>
   <div class="gcard">
-    <p class="kick">Omron CP2E · Lab PLC</p>
-    <h1>Simulasi Trainer PLC</h1>
+    <p class="kick">Laboratorium · Simulator Trainer</p>
+    <h1>Lab Virtual</h1>
     <div class="gtabs"><button type="button" data-gtab="login" class="on">Masuk</button><button type="button" data-gtab="reg">Daftar</button></div>
     <form id="fLogin" autocomplete="on">
       <label>NIM (atau username dosen/asisten)<input id="lId" autocomplete="username" required></label>
@@ -32,6 +32,8 @@
   </div>
 </section>
 <section id="loading" class="gate" hidden><div class="gcard"><div class="spin" aria-hidden="true"></div><p id="loadMsg">Memuat…</p></div></section>
+<section id="home" hidden></section>
+<nav id="lvbar" class="lvbar" hidden></nav>
 <div id="app" hidden></div>
 <div id="admin" hidden></div>
 <script src="config.js"></script>
