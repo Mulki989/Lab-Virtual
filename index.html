@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulasi Trainer PLC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<section id="gate" class="gate" hidden>
+  <div class="gcard">
+    <p class="kick">Omron CP2E · Lab PLC</p>
+    <h1>Simulasi Trainer PLC</h1>
+    <div class="gtabs"><button type="button" data-gtab="login" class="on">Masuk</button><button type="button" data-gtab="reg">Daftar</button></div>
+    <form id="fLogin" autocomplete="on">
+      <label>NIM (atau username dosen/asisten)<input id="lId" autocomplete="username" required></label>
+      <label>Password<input id="lPw" type="password" autocomplete="current-password" required></label>
+      <button type="submit" class="pri">Masuk</button>
+    </form>
+    <form id="fReg" hidden autocomplete="off">
+      <label>Nama lengkap<input id="rNama" required maxlength="60"></label>
+      <label>NIM<input id="rNim" required maxlength="20" inputmode="text"></label>
+      <label>Kode kelas (dari dosen)<input id="rKelas" required maxlength="20"></label>
+      <label>Password (minimal 6 karakter)<input id="rPw" type="password" autocomplete="new-password" required minlength="6"></label>
+      <label>Ulangi password<input id="rPw2" type="password" autocomplete="new-password" required minlength="6"></label>
+      <button type="submit" class="pri">Daftar</button>
+    </form>
+    <p id="gMsg" class="gmsg" role="status"></p>
+    <p class="gnote">Lupa password? Hubungi asisten praktikum untuk direset.</p>
+  </div>
+</section>
+<section id="loading" class="gate" hidden><div class="gcard"><div class="spin" aria-hidden="true"></div><p id="loadMsg">Memuat…</p></div></section>
+<div id="app" hidden></div>
+<div id="admin" hidden></div>
+<script src="config.js"></script>
+<script src="loader.js"></script>
+</body>
+</html>
