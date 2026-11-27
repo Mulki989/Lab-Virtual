@@ -4,7 +4,7 @@
   const CFG = window.LV_CONFIG || window.PLC_CONFIG || {};
   const $ = q => document.querySelector(q);
   const SESS = 'lv_session';
-  let session = null, home = null, simId = null;
+  let session = null, home = null, simId = null, place = null, placeAt = 0, audited = false;
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   /* ---------- komunikasi dengan Apps Script ---------- */
@@ -94,7 +94,16 @@
     if (store.dirty) { store.dirty = false; send('saveState', { state: store.data, summary: summary() }); }
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') beacon(); });
-  window.addEventListener('pagehide', beacon);
+  window.addEventListener('pagehide', () => { beacon(); auditBeacon(); });
+  /* catatan akses (jam & durasi) untuk semua peran */
+  const mins = () => placeAt ? (Date.now() - placeAt) / 60000 : 0;
+  function audit(aksi, extra) { if (!session) return Promise.resolve(); return call('audit', Object.assign({ aksi, sim: place && place !== 'DASHBOARD' ? place : '' }, extra || {}), 1).catch(() => {}); }
+  function enterPlace(p) { place = p; placeAt = Date.now(); audit(p === 'DASHBOARD' ? 'Buka dashboard' : 'Buka simulator'); }
+  async function leavePlace(extra) { if (!place || audited) return; audited = true; await audit(place === 'DASHBOARD' ? 'Keluar dashboard' : 'Keluar simulator', Object.assign({ durasi: mins() }, extra || {})); }
+  function auditBeacon() {
+    if (!session || audited || !place) return; audited = true;
+    try { navigator.sendBeacon(CFG.API_URL, new Blob([JSON.stringify({ action: 'audit', token: session.token, aksi: 'Tutup halaman', sim: place !== 'DASHBOARD' ? place : '', detail: place === 'DASHBOARD' ? 'dashboard' : '', durasi: mins() })], { type: 'text/plain' })); } catch (e) {}
+  }
 
   /* ---------- memuat bundle dari Drive (dengan cache per versi) ---------- */
   async function getBundle(sim, part, v) {
@@ -113,11 +122,11 @@
     get user() { return session && session.user; },
     get sim() { return simId; },
     materi: null, getSummary: null,
-    logout: async () => { await flushLog(); await pushState(); try { localStorage.removeItem(SESS); } catch (e) {} location.hash = ''; location.reload(); },
-    toHome: async () => { await flushLog(); await pushState(); location.hash = ''; location.reload(); },
-    toDashboard: async () => { if (session && !isMhs()) { await flushLog(); await pushState(); location.hash = 'dashboard'; location.reload(); } },
+    logout: async () => { await flushLog(); await pushState(); await leavePlace(); audited = true; await audit('Logout'); try { localStorage.removeItem(SESS); } catch (e) {} location.hash = ''; location.reload(); },
+    toHome: async () => { await flushLog(); await pushState(); await leavePlace(); location.hash = ''; location.reload(); },
+    toDashboard: async () => { if (session && !isMhs()) { await flushLog(); await pushState(); await leavePlace(); location.hash = 'dashboard'; location.reload(); } },
     openApp: () => API.toHome(),
-    openSim: id => { location.hash = 'sim=' + encodeURIComponent(id); location.reload(); },
+    openSim: async id => { await leavePlace(); location.hash = 'sim=' + encodeURIComponent(id); location.reload(); },
     flush: async () => { await flushLog(); await pushState(); }
   };
 
@@ -156,12 +165,12 @@
     storeInit(st);
     loadingMsg('Memuat simulator…');
     const code = await getBundle(s.id, 'app', s.v);
-    show('app'); run(code);
+    show('app'); run(code); enterPlace(s.id);
   }
   async function startAdmin() {
     show('loading'); loadingMsg('Memuat dashboard…');
     const code = await getBundle('', 'admin', home.adminV);
-    show('admin'); run(code);
+    show('admin'); run(code); enterPlace('DASHBOARD');
   }
   async function enter() {
     show('loading'); loadingMsg('Memuat daftar simulator…');
