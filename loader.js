@@ -132,7 +132,8 @@
 
   /* ---------- beranda: kartu simulator ---------- */
   function drawHome() {
-    const u = session.user, sims = home.sims;
+    /* simulator yang dibuka tampil lebih dulu; urutan asli tetap dipertahankan di dalam tiap kelompok */
+    const u = session.user, sims = home.sims.map((x, i) => [x, i]).sort((a, b) => (b[0].open ? 1 : 0) - (a[0].open ? 1 : 0) || a[1] - b[1]).map(x => x[0]);
     const staff = u.role !== 'mahasiswa';
     $('#home').innerHTML = `<div class="lv">
       <header class="lv-top"><div><p class="kick">Lab Virtual</p><h1>Pilih simulator</h1></div>
