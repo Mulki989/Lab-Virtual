@@ -64,3 +64,5 @@ button:disabled{opacity:.45;cursor:default}
 .tg{min-height:36px;padding:4px 10px;font-weight:700}.tg.on{background:var(--okbg);border-color:var(--ok);color:var(--ok)}.tg.off{color:var(--muted)}
 tr.staff td{background:#fff7e6}
 #btnFoto,#foto{display:none!important}
+.iz-cell{display:grid;gap:6px}.iz-cell input{min-height:36px!important;padding:6px 8px!important;font-size:14px!important}
+.acc-grid td.nocell{color:var(--muted);text-align:center;background:light-dark(#f4f5f7,#161a1f)}
